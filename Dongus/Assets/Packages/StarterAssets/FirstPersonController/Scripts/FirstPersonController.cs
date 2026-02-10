@@ -67,6 +67,7 @@ namespace StarterAssets
 		private Vector3 defaultCamLocalPos;
 		private float bobTimer;
 		private float targetTilt = 0;
+		private float tiltVelocity;
 
 		// player
 		private float _speed;
@@ -164,8 +165,7 @@ namespace StarterAssets
 				// clamp our pitch rotation
 				_cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 
-				// Update Cinemachine camera target pitch
-				CinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch * lookSensitivity, 0.0f, 0.0f);
+				CinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch * lookSensitivity, 0.0f, targetTilt);
 
 				// rotate the player left and right
 				transform.Rotate(Vector3.up * _rotationVelocity * lookSensitivity);
@@ -213,17 +213,20 @@ namespace StarterAssets
 		
 		private void CameraTilt()
 		{
-			if (_input.move.x != 0)
-			{
-				targetTilt = -_input.move.x * cameraTiltAngle;
+			float desiredTilt = 0f;
 
-				Quaternion targetRotation = Quaternion.Euler(CinemachineCameraTarget.transform.localRotation.x, CinemachineCameraTarget.transform.localRotation.y, targetTilt);
-				CinemachineCameraTarget.transform.localRotation = Quaternion.Slerp(
-					CinemachineCameraTarget.transform.localRotation,
-					targetRotation,
-					Time.deltaTime * cameraTiltSmoothing
-				);
+			// A / D input
+			if (Mathf.Abs(_input.move.x) > 0.01f)
+			{
+				desiredTilt = -_input.move.x * cameraTiltAngle;
 			}
+
+			targetTilt = Mathf.SmoothDamp(
+				targetTilt,
+				desiredTilt,
+				ref tiltVelocity,
+				1f / cameraTiltSmoothing
+			);
 		}
 
 		private void Move()
